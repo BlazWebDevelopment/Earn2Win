@@ -4,129 +4,79 @@
  * ─────────────────────────────────────────────────────────────────────────────
  *
  *  pump.fun renders its candles with TradingView **Advanced Charts** (the
- *  proprietary Charting Library). It is not on npm, not redistributable, and
- *  gated behind an application form and a private GitHub repo, so we cannot
- *  self-host it. Instead we embed a ready-made chart that is itself
- *  TradingView-powered.
+ *  proprietary Charting Library). It is not published to npm, not
+ *  redistributable, and gated behind an application form and a private GitHub
+ *  repo, so we cannot self-host it. Instead we embed a ready-made chart that is
+ *  itself Advanced Charts under the hood.
  *
- *  Two providers are supported because they trade off against each other:
+ *  DexScreener's embed was chosen over the Moralis widget: it needs no account,
+ *  no API key and no script tag, and — verified against their own bundle — it
+ *  exposes sub-minute resolutions, which is what was asked for. The Moralis
+ *  widget refuses to render without a paid Pro/Business plan and a manually
+ *  whitelisted domain.
  *
- *    • dexscreener — free, no key, no script tag. One minute is its finest
- *      candle, so it cannot show the 1s/5s granularity that was asked for.
- *    • moralis     — does go down to 1s, but `widget.moralis.com` checks the
- *      embedding origin against an allowlist and refuses to render without a
- *      paid Pro/Business plan, which also has to be requested by email.
- *
- *  DexScreener is the default so the page works with no account and no cost.
- *  Set `NEXT_PUBLIC_CHART_EMBED=moralis` to switch once a Moralis plan is
- *  active and the deployment's domain has been whitelisted.
+ *  Everything below mirrors the parameter schema DexScreener actually parses.
  */
-
-export type ChartEmbedProvider = "dexscreener" | "moralis";
-
-export const CHART_EMBED_PROVIDER: ChartEmbedProvider =
-  process.env.NEXT_PUBLIC_CHART_EMBED?.trim().toLowerCase() === "moralis"
-    ? "moralis"
-    : "dexscreener";
-
-interface EmbedCapabilities {
-  label: string;
-  /** Human-readable interval range, rendered in the UI so it is never implied. */
-  intervals: string;
-  /** Whether sub-minute candles are available at all. */
-  subMinute: boolean;
-  /** Whether the provider needs a paid plan or origin whitelisting. */
-  gated: boolean;
-}
-
-export const EMBED_CAPABILITIES: Record<ChartEmbedProvider, EmbedCapabilities> = {
-  dexscreener: {
-    label: "DexScreener",
-    intervals: "1m and above",
-    subMinute: false,
-    gated: false,
-  },
-  moralis: {
-    label: "Moralis",
-    intervals: "1s and above",
-    subMinute: true,
-    gated: true,
-  },
-};
-
-/** Shared so both embeds inherit the app's surface, not their own default theme. */
-const PALETTE = {
-  background: "#101211",
-  grid: "#191c1a",
-  text: "#9b9b9b",
-  up: "#5fcb88",
-  down: "#e0615a",
-} as const;
 
 /**
- * DexScreener renders a pool, not a mint, so the pool address has to be
- * resolved from the live snapshot rather than hardcoded — a token can be traded
- * in several pools and the deepest one is the only meaningful chart.
+ * Candle intervals the embed accepts, as its own resolution codes. Seconds take
+ * an `S` suffix, bare numbers are minutes. Note the jump from 1s to 15s — there
+ * is no 5s resolution on offer.
  */
-export function dexscreenerEmbedUrl(pairAddress: string): string {
+export const EMBED_INTERVALS = {
+  "1S": "1s",
+  "15S": "15s",
+  "30S": "30s",
+  "1": "1m",
+  "5": "5m",
+  "15": "15m",
+  "60": "1h",
+  "240": "4h",
+  "1D": "1D",
+} as const;
+
+export type EmbedInterval = keyof typeof EMBED_INTERVALS;
+
+/** The embed plots either raw price or market cap, the way pump.fun does. */
+export type EmbedChartType = "marketCap" | "price";
+
+export const DEFAULT_INTERVAL: EmbedInterval = "1S";
+export const DEFAULT_CHART_TYPE: EmbedChartType = "marketCap";
+
+export interface EmbedOptions {
+  interval: EmbedInterval;
+  chartType: EmbedChartType;
+}
+
+/**
+ * DexScreener charts a *pool*, not a mint, so the pool address has to come from
+ * the live snapshot rather than a constant — a token can trade in several pools
+ * and only the deepest one has a meaningful price.
+ */
+export function dexscreenerEmbedUrl(
+  pairAddress: string,
+  { interval, chartType }: EmbedOptions,
+): string {
   const params = new URLSearchParams({
     embed: "1",
     theme: "dark",
+    chartTheme: "dark",
+    chartType,
+    interval,
+    // Strip the panels we already render ourselves, keeping only the chart and
+    // its interval toolbar. These default to enabled unless explicitly zeroed.
     info: "0",
     trades: "0",
+    nav: "0",
     chartLeftToolbar: "0",
-    chartTheme: "dark",
-    chartType: "usd",
-    interval: "5",
+    chartTimeframesToolbar: "1",
+    // Without this the embed shows its info tab first on narrow viewports.
+    chartDefaultOnMobile: "1",
   });
 
   return `https://dexscreener.com/solana/${encodeURIComponent(pairAddress)}?${params}`;
 }
 
-export const MORALIS_SCRIPT_ID = "moralis-chart-widget";
-export const MORALIS_SCRIPT_SRC = "https://moralis.com/static/embed/chart.js";
-
-export interface MoralisWidgetOptions {
-  autoSize: boolean;
-  chainId: string;
-  tokenAddress: string;
-  defaultInterval: string;
-  timeZone: string;
-  theme: string;
-  locale: string;
-  backgroundColor: string;
-  gridColor: string;
-  textColor: string;
-  candleUpColor: string;
-  candleDownColor: string;
-  hideLeftToolbar: boolean;
-  hideTopToolbar: boolean;
-  hideBottomToolbar: boolean;
-}
-
-/** Moralis charts a mint directly, so it needs no pool resolution. */
-export function moralisWidgetOptions(tokenAddress: string): MoralisWidgetOptions {
-  return {
-    autoSize: true,
-    chainId: "solana",
-    tokenAddress,
-    defaultInterval: "1s",
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Etc/UTC",
-    theme: "moralis",
-    locale: "en",
-    backgroundColor: PALETTE.background,
-    gridColor: PALETTE.grid,
-    textColor: PALETTE.text,
-    candleUpColor: PALETTE.up,
-    candleDownColor: PALETTE.down,
-    hideLeftToolbar: true,
-    hideTopToolbar: false,
-    hideBottomToolbar: false,
-  };
-}
-
-declare global {
-  interface Window {
-    createMyWidget?: (containerId: string, options: MoralisWidgetOptions) => void;
-  }
+export function dexscreenerPairUrl(pairAddress: string): string {
+  return `https://dexscreener.com/solana/${encodeURIComponent(pairAddress)}`;
 }

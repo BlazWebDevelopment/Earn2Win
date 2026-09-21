@@ -15,7 +15,7 @@
  */
 
 /** The official E2W mint. `NEXT_PUBLIC_E2W_TOKEN_ADDRESS` overrides it. */
-const E2W_MINT_ADDRESS = "ExjkD5rvPB8Bp18PLCvBJFBGuKjDA1FTCyzRMsNQgaGc";
+const E2W_MINT_ADDRESS = "EkzGSMY1Hd3YmDgYyWHCbRFxAPNwhdwxPSf9FJPeCe2w";
 
 export const E2W_TOKEN = {
   address: (process.env.NEXT_PUBLIC_E2W_TOKEN_ADDRESS || E2W_MINT_ADDRESS).trim(),

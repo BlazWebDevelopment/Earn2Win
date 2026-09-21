@@ -5,8 +5,9 @@ export const SITE = {
   description:
     "Connect token creator fees with the people creating attention across social platforms.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://earn2win.app",
-  /** Public X account for the product. Update once the handle is live. */
-  x: "https://x.com/earn2win",
+  /** Public X account for the product. */
+  x: "https://x.com/Earn2WinApp",
+  xHandle: "@Earn2WinApp",
 } as const;
 
 export const NAV_LINKS = [
