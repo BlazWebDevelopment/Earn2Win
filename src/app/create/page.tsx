@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 import { CreateTokenForm } from "@/components/CreateTokenForm";
-import { Badge } from "@/components/ui/primitives";
+import { Eyebrow } from "@/components/ui/primitives";
 import { LEGAL } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Create",
   description:
-    "Launch a social-first token and choose who its creator fees support. Demo flow — no transaction is submitted.",
+    "Launch a social-first token and choose who its creator fees support. Earn2Win deploys it for you — no wallet required.",
   alternates: { canonical: "/create" },
 };
 
@@ -20,12 +20,13 @@ export default function CreatePage() {
 
       <div className="container-page pt-12 pb-20 md:pt-16 md:pb-28">
         <header className="max-w-2xl">
-          <Badge tone="warn">Demo environment</Badge>
+          <Eyebrow>Create</Eyebrow>
           <h1 className="mt-5 text-[32px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[44px]">
             Create with Earn2Win
           </h1>
           <p className="mt-4 text-[16px] leading-relaxed text-fg-secondary md:text-[17px]">
             Launch a social-first token and choose who its creator fees support.
+            Earn2Win deploys it from the project wallet, so you never connect one.
           </p>
         </header>
 

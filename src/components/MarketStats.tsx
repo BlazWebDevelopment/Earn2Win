@@ -140,8 +140,10 @@ export function MarketStats({ result, loading, onRefresh }: MarketStatsProps) {
           value={live ? formatPrice(snapshot.priceUsd) : dash}
           loading={pending}
           sub={
+            // `priceNative` is denominated in whatever the pool quotes
+            // against, which is not always SOL.
             live && snapshot.priceNative
-              ? `${formatTokenAmount(snapshot.priceNative)} SOL`
+              ? `${formatTokenAmount(snapshot.priceNative)} ${snapshot.pair?.quoteSymbol ?? "SOL"}`
               : undefined
           }
         />

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { IS_TOKEN_LIVE, MARKET_POLL_INTERVAL } from "@/config/token";
-import type { MarketResult, SeriesResult, Timeframe } from "./types";
+import type { MarketResult } from "./types";
 
 const UNCONFIGURED: MarketResult = {
   status: "unconfigured",
@@ -91,79 +91,3 @@ export function useMarketData(): MarketState & { refresh: () => void } {
   return { ...state, refresh };
 }
 
-interface SeriesState {
-  result: SeriesResult | null;
-  loading: boolean;
-  /** Timeframe the stored result belongs to. */
-  frame: Timeframe | null;
-}
-
-/**
- * Price history for one timeframe.
- *
- * The stored result carries the timeframe it was fetched for, so switching
- * timeframes derives the loading state during render instead of needing an
- * effect to reset it.
- */
-export function useMarketSeries(timeframe: Timeframe): {
-  result: SeriesResult | null;
-  loading: boolean;
-} {
-  const [state, setState] = useState<SeriesState>({
-    result: null,
-    loading: true,
-    frame: null,
-  });
-
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      try {
-        const response = await fetch(
-          `/api/market/series?timeframe=${encodeURIComponent(timeframe)}`,
-          { cache: "no-store" },
-        );
-        if (!response.ok) throw new Error(String(response.status));
-
-        const result = (await response.json()) as SeriesResult;
-        if (active) setState({ result, loading: false, frame: timeframe });
-      } catch {
-        if (active) {
-          setState({
-            result: {
-              status: "unavailable",
-              timeframe,
-              candles: [],
-              message: "Price history is temporarily unavailable.",
-              source: "unknown",
-            },
-            loading: false,
-            frame: timeframe,
-          });
-        }
-      }
-    };
-
-    void load();
-
-    // Only the live token needs refreshing; demo candles are static.
-    const timer = IS_TOKEN_LIVE
-      ? window.setInterval(() => {
-          if (document.visibilityState === "visible") void load();
-        }, MARKET_POLL_INTERVAL * 2)
-      : undefined;
-
-    return () => {
-      active = false;
-      if (timer) window.clearInterval(timer);
-    };
-  }, [timeframe]);
-
-  const stale = state.frame !== timeframe;
-
-  return {
-    result: stale ? null : state.result,
-    loading: stale || state.loading,
-  };
-}

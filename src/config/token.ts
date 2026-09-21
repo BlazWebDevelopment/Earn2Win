@@ -3,19 +3,22 @@
  *  THE ONE PLACE TO CONFIGURE THE E2W TOKEN
  * ─────────────────────────────────────────────────────────────────────────────
  *
- *  Paste the E2W mint address into `.env.local`:
+ *  The live mint is `E2W_MINT_ADDRESS` below. To point the app at a different
+ *  mint without touching code, set this in `.env.local` instead:
  *
- *      NEXT_PUBLIC_E2W_TOKEN_ADDRESS=YourVanityMintAddressHere
+ *      NEXT_PUBLIC_E2W_TOKEN_ADDRESS=SomeOtherMintAddress
  *
- *  ...or, if you prefer it committed, replace the empty string fallback below.
- *  Nothing else in the codebase hardcodes the address.
+ *  Nothing else in the codebase references the address.
  *
- *  While the address is empty the whole app switches into pre-launch mode:
- *  "Coming soon" states, clearly-labelled demo data, disabled explorer links.
+ *  If both are empty the app falls back to pre-launch mode: "Coming soon"
+ *  states, clearly-labelled demo data, disabled explorer links.
  */
 
+/** The official E2W mint. `NEXT_PUBLIC_E2W_TOKEN_ADDRESS` overrides it. */
+const E2W_MINT_ADDRESS = "ExjkD5rvPB8Bp18PLCvBJFBGuKjDA1FTCyzRMsNQgaGc";
+
 export const E2W_TOKEN = {
-  address: (process.env.NEXT_PUBLIC_E2W_TOKEN_ADDRESS ?? "").trim(),
+  address: (process.env.NEXT_PUBLIC_E2W_TOKEN_ADDRESS || E2W_MINT_ADDRESS).trim(),
   name: "Earn2Win",
   symbol: "E2W",
   image: "/e2w-token.png",

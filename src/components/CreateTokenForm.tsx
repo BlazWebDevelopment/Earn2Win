@@ -1,7 +1,7 @@
 "use client";
 
 import { SiSolana, SiTelegram, SiX } from "@icons-pack/react-simple-icons";
-import { Check, Info, Loader2, Rocket } from "lucide-react";
+import { Check, Info, Loader2, Rocket, Wallet } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -11,7 +11,7 @@ import { SocialRecipientCard } from "@/components/SocialRecipientCard";
 import { TokenImageUpload } from "@/components/TokenImageUpload";
 import { Button } from "@/components/ui/Button";
 import { Field, InputShell, TextArea, TextInput } from "@/components/ui/Field";
-import { Badge, Eyebrow } from "@/components/ui/primitives";
+import { Eyebrow } from "@/components/ui/primitives";
 import { E2W_TOKEN } from "@/config/token";
 import { cn } from "@/lib/cn";
 import { feeRoutingProvider } from "@/lib/fee-routing";
@@ -33,7 +33,6 @@ interface FormState {
   website: string;
   x: string;
   telegram: string;
-  openingBuy: string;
 }
 
 const INITIAL: FormState = {
@@ -46,13 +45,27 @@ const INITIAL: FormState = {
   website: "",
   x: "",
   telegram: "",
-  openingBuy: "",
 };
 
 type Errors = Partial<Record<keyof FormState, string>>;
 
-/** The stages shown while the demo launch "runs". */
-const STAGES = ["Preparing token", "Configuring recipient", "Finalizing demo"] as const;
+const STAGES = ["Validating details", "Configuring recipient", "Finalizing"] as const;
+
+/** How a launch reaches the chain, since the creator never signs anything. */
+const LAUNCH_STEPS = [
+  {
+    title: "You submit",
+    body: "Token details and the creator handle you want fees tied to.",
+  },
+  {
+    title: "Earn2Win deploys",
+    body: "The mint is created from the project wallet on Solana.",
+  },
+  {
+    title: "Fees route",
+    body: "Creator fees are associated with the handle you chose.",
+  },
+] as const;
 
 const MAX_NAME = 32;
 const MAX_TICKER = 10;
@@ -79,13 +92,6 @@ function validate(form: FormState): Errors {
 
   if (form.website.trim() && !/^https?:\/\/.+\..+/.test(form.website.trim()))
     errors.website = "Enter a full URL starting with https://";
-
-  const buy = form.openingBuy.trim();
-  if (buy) {
-    const amount = Number(buy);
-    if (!Number.isFinite(amount) || amount < 0) errors.openingBuy = "Enter a valid amount.";
-    else if (amount > 1000) errors.openingBuy = "Keep the demo amount under 1000 SOL.";
-  }
 
   return errors;
 }
@@ -408,41 +414,37 @@ export function CreateTokenForm() {
               <span className="h-px flex-1 bg-line" />
             </legend>
 
-            <Field
-              id="field-openingBuy"
-              label="Opening buy"
-              optional
-              error={errors.openingBuy}
-              hint="Simulated only. This release never requests a wallet or submits a transaction."
-              className="sm:max-w-xs"
-            >
-              <InputShell invalid={Boolean(errors.openingBuy)}>
-                <TextInput
-                  id="field-openingBuy"
-                  name="openingBuy"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={form.openingBuy}
-                  placeholder="0.00"
-                  aria-invalid={Boolean(errors.openingBuy)}
-                  aria-describedby={
-                    errors.openingBuy
-                      ? "field-openingBuy-error"
-                      : "field-openingBuy-hint"
-                  }
-                  className="tabular"
-                  onChange={(event) => set("openingBuy", event.target.value)}
-                />
-                <span
-                  aria-hidden
-                  className="ml-2 shrink-0 border-l border-line pl-3 text-[13px] font-medium text-fg-secondary"
-                >
-                  SOL
+            <div className="rounded-card border border-line bg-surface-2 p-5">
+              <div className="flex items-start gap-3.5">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-dim text-brand">
+                  <Wallet size={16} aria-hidden />
                 </span>
-              </InputShell>
-            </Field>
+                <div className="min-w-0">
+                  <p className="text-[14px] font-medium">No wallet required</p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-fg-secondary">
+                    Earn2Win deploys the token for you. Launches go out from the
+                    project wallet — the same wallet that launched{" "}
+                    <span className="font-mono text-fg">${E2W_TOKEN.symbol}</span>{" "}
+                    — so you never connect a wallet, sign a transaction, or fund
+                    an opening buy yourself.
+                  </p>
+                </div>
+              </div>
+
+              <ol className="mt-5 grid gap-4 border-t border-line pt-4 sm:grid-cols-3">
+                {LAUNCH_STEPS.map((step, index) => (
+                  <li key={step.title} className="min-w-0">
+                    <p className="font-mono text-[11px] text-fg-muted">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <p className="mt-1.5 text-[13px] font-medium">{step.title}</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-fg-secondary">
+                      {step.body}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </fieldset>
 
           <div className="flex flex-col items-stretch gap-4 border-t border-line pt-7 sm:items-start">
@@ -506,8 +508,8 @@ export function CreateTokenForm() {
 
             <p className="flex items-start gap-2 text-[12px] leading-relaxed text-fg-muted">
               <Info size={13} className="mt-0.5 shrink-0" aria-hidden />
-              This is a product demo. Creating a token here does not mint anything,
-              does not submit to pump.fun, and does not broadcast a transaction.
+              Launch submission is not connected yet. Requests made here are held
+              in your browser and are not sent to Earn2Win or broadcast on-chain.
             </p>
           </div>
         </form>
@@ -517,7 +519,6 @@ export function CreateTokenForm() {
           <div className="rounded-card border border-line bg-card">
             <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
               <h2 className="text-[14px] font-semibold">Summary</h2>
-              <Badge tone="warn">Demo</Badge>
             </div>
 
             <div className="flex items-center gap-3.5 border-b border-line px-5 py-4">
@@ -554,17 +555,11 @@ export function CreateTokenForm() {
                 icon={<SiSolana size={11} aria-hidden />}
               />
               <SummaryRow label="Launchpad" value={E2W_TOKEN.launchpad} />
-              {form.openingBuy.trim() ? (
-                <SummaryRow
-                  label="Opening buy"
-                  value={`${form.openingBuy.trim()} SOL`}
-                  mono
-                />
-              ) : null}
+              <SummaryRow label="Deployed by" value="Earn2Win project wallet" />
             </dl>
 
             <p className="border-t border-line px-5 py-4 text-[11.5px] leading-relaxed text-fg-muted">
-              Values update as you type. Nothing here is submitted anywhere.
+              Values update as you type.
             </p>
           </div>
 

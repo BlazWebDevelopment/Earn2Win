@@ -36,18 +36,14 @@ Open <http://localhost:3000>.
 
 ## Configure E2W
 
-Create `.env.local`:
-
-```bash
-NEXT_PUBLIC_E2W_TOKEN_ADDRESS=YOUR_TOKEN_ADDRESS
-```
-
-**That is the only place you ever need to put the contract address.** It is read
-once, in [`src/config/token.ts`](src/config/token.ts):
+The live mint ships committed in [`src/config/token.ts`](src/config/token.ts),
+which is **the only place the contract address appears**:
 
 ```ts
+const E2W_MINT_ADDRESS = "ExjkD5rvPB8Bp18PLCvBJFBGuKjDA1FTCyzRMsNQgaGc";
+
 export const E2W_TOKEN = {
-  address: (process.env.NEXT_PUBLIC_E2W_TOKEN_ADDRESS ?? "").trim(),
+  address: (process.env.NEXT_PUBLIC_E2W_TOKEN_ADDRESS || E2W_MINT_ADDRESS).trim(),
   name: "Earn2Win",
   symbol: "E2W",
   image: "/e2w-token.png",
@@ -59,12 +55,15 @@ export const E2W_TOKEN = {
 export const IS_TOKEN_LIVE: boolean = E2W_TOKEN.address.length > 0;
 ```
 
-If you would rather commit the address than use an env var, replace the `""`
-fallback on the `address` line. No component hardcodes it.
+To point a deployment at a different mint without editing code, set
+`NEXT_PUBLIC_E2W_TOKEN_ADDRESS` in `.env.local`. No component hardcodes the
+address.
 
 ### What flips when the address is set
 
-`IS_TOKEN_LIVE` is derived from the address and gates every financial surface:
+`IS_TOKEN_LIVE` is derived from the address and gates every financial surface.
+With the mint committed the app runs in the right-hand column; blanking both the
+constant and the env var puts it back in pre-launch mode.
 
 | Surface                 | Address empty                         | Address configured                      |
 | ----------------------- | ------------------------------------- | --------------------------------------- |
@@ -78,7 +77,7 @@ fallback on the `address` line. No component hardcodes it.
 
 | Variable                        | Required | Purpose                                              |
 | ------------------------------- | -------- | ---------------------------------------------------- |
-| `NEXT_PUBLIC_E2W_TOKEN_ADDRESS` | No       | The E2W mint. Empty = pre-launch mode.               |
+| `NEXT_PUBLIC_E2W_TOKEN_ADDRESS` | No       | Overrides the committed E2W mint.                    |
 | `NEXT_PUBLIC_SITE_URL`          | No       | Canonical origin for metadata, OG tags and sitemap. Defaults to `https://earn2win.app`. |
 
 Both are safe to expose — they are public chain data and a public URL.
@@ -245,10 +244,10 @@ No database, no auth, no wallet, no blockchain dependency.
 
 ## Deploy
 
-Deploys to Vercel with no configuration. Import the repository, add
-`NEXT_PUBLIC_E2W_TOKEN_ADDRESS` (and optionally `NEXT_PUBLIC_SITE_URL`) as
-environment variables, and deploy. The two API routes run as serverless
-functions; everything else is static.
+Deploys to Vercel with no configuration. Import the repository and deploy — the
+mint is committed, so live market data works out of the box. Optionally set
+`NEXT_PUBLIC_SITE_URL` so metadata, OG tags and the sitemap use your domain. The
+two API routes run as serverless functions; everything else is static.
 
 ---
 

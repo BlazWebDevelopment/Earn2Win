@@ -92,7 +92,14 @@ export type SeriesStatus =
 
 export interface SeriesResult {
   status: SeriesStatus;
+  /** The window these candles actually cover. */
   timeframe: Timeframe;
+  /**
+   * The window the caller asked for. Differs from `timeframe` when the pool is
+   * too young to have data at the requested granularity and a narrower window
+   * was substituted.
+   */
+  requestedTimeframe?: Timeframe;
   candles: Candle[];
   message: string | null;
   source: string;

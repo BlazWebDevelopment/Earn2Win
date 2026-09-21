@@ -16,10 +16,10 @@ interface LaunchSuccessToastProps {
 }
 
 /**
- * Success notification for the simulated create flow.
+ * Confirmation for the create flow.
  *
- * The wording is deliberately unambiguous: a demo launch was created and no
- * on-chain transaction was submitted. It must never imply a real mint.
+ * Nothing is transmitted or minted yet, so the wording must never imply that a
+ * launch is pending on-chain. Update it only when submission is actually wired.
  */
 export function LaunchSuccessToast({
   open,
@@ -65,9 +65,9 @@ export function LaunchSuccessToast({
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[14.5px] font-semibold">Demo launch created</p>
+            <p className="text-[14.5px] font-semibold">Launch request created</p>
             <p className="mt-1 text-[12.5px] leading-relaxed text-fg-secondary">
-              No on-chain transaction was submitted.
+              Held in this browser — submission to Earn2Win is not connected yet.
             </p>
 
             <dl className="mt-3 space-y-1.5 border-t border-line pt-3 text-[12.5px]">
